@@ -68,7 +68,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     // Kurs düzenleme
     Route::get('/{course}/edit', EditCourse::class)
- ->middleware(['auth', 'verified', 'role.admin.instructor'])
 
         ->name('courses.edit');
 
@@ -106,5 +105,5 @@ Route::get('/test-dashboard', function() {
 });
 
 // Genel Kurs Rotaları (Herkes görebilir)
-Route::get('/courses', CourseList::class)->name('courses.index');
+Route::get('/coursess', CourseList::class)->name('courses.index');
 Route::get('/courses/{id}', CourseDetails::class)->name('courses.show');

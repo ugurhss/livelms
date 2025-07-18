@@ -68,7 +68,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     // Kurs düzenleme
     Route::get('/{course}/edit', EditCourse::class)
- ->middleware(['auth', 'verified', 'role.admin.instructor'])
 
         ->name('courses.edit');
 

@@ -58,27 +58,25 @@ Route::middleware(['auth', 'verified'])->group(function () {
     });
 
     // Kurs İşlemleri
-  Route::prefix('courses')->group(function () {
-    Volt::route('/', 'courses.index')->name('courses.index');
+    Route::prefix('courses')->group(function () {
+        Volt::route('/', 'courses.index')->name('courses.index');
 
-    // Kurs oluşturma
-    Route::get('/create', CreateCourses::class)
-        ->middleware(['auth', 'verified', 'role.admin.instructor'])
-        ->name('courses.create');
+        // Kurs oluşturma
+        Route::middleware('role:instructor,admin')->group(function () {
+            Route::get('/create', CreateCourses::class)->name('courses.create');
+        });
 
-    // Kurs düzenleme
-    Route::get('/{course}/edit', EditCourse::class)
- ->middleware(['auth', 'verified', 'role.admin.instructor'])
+        // Kurs düzenleme
+        Route::get('/{course}/edit', EditCourse::class)
+            ->middleware('can:update,course')
+            ->name('courses.edit');
 
-        ->name('courses.edit');
-
-    // Kayıt işlemleri
-    Route::post('/{course}/enroll', [CourseController::class, 'enroll'])
-        ->name('courses.enroll');
-    Route::post('/{course}/unenroll', [CourseController::class, 'unenroll'])
-        ->name('courses.unenroll');
-});
-
+        // Kayıt işlemleri
+        Route::post('/{course}/enroll', [CourseController::class, 'enroll'])
+            ->name('courses.enroll');
+        Route::post('/{course}/unenroll', [CourseController::class, 'unenroll'])
+            ->name('courses.unenroll');
+    });
 
     // Rol Bazlı Özel Rotalar
     Route::middleware('role:instructor')->group(function () {
@@ -107,4 +105,4 @@ Route::get('/test-dashboard', function() {
 
 // Genel Kurs Rotaları (Herkes görebilir)
 Route::get('/courses', CourseList::class)->name('courses.index');
-Route::get('/courses/{id}', CourseDetails::class)->name('courses.show');
+Route::get('/courses/{course}', CourseDetails::class)->name('courses.show');

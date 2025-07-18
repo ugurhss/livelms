@@ -2,16 +2,18 @@
 
 use Livewire\Volt\Volt;
 use App\Livewire\Courses\CourseList;
+use App\Livewire\Courses\EditCourse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use App\Livewire\Courses\CourseDetails;
-use App\Livewire\Courses\EditCourse;
+use App\Livewire\Courses\CreateCourses;
 use App\Livewire\Dashboard\UserDashboard;
 use App\Livewire\Dashboard\AdminDashboard;
 use App\Livewire\Dashboard\StudentDashboard;
 use App\Http\Controllers\Api\CourseController;
-use App\Livewire\Courses\CreateCourses;
 use App\Livewire\Dashboard\InstructorDashboard;
+
+
 
 /*
 |--------------------------------------------------------------------------
@@ -29,14 +31,15 @@ Route::get('/', function () {
     return view('welcome');
 })->name('home');
 
-// Kimlik Doğrulama Rotaları
+// Kimlik Doğrulama Rotaları (auth.php'den gelenlerle birlikte)
 require __DIR__.'/auth.php';
 
 // Authenticated Kullanıcı Rotaları
 Route::middleware(['auth', 'verified'])->group(function () {
-    // Dashboard
+    // Ana Dashboard (Rol Bazlı Yönlendirme)
     Route::get('/dashboard', function () {
-        $user = Auth::user();
+        $user = Auth::user(); // auth() yerine Auth facade
+
         return match($user->role) {
             'student' => app(StudentDashboard::class)->render(),
             'instructor' => app(InstructorDashboard::class)->render(),
@@ -52,33 +55,23 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Volt::route('password', 'settings.password')->name('settings.password');
         Volt::route('appearance', 'settings.appearance')->name('settings.appearance');
 
+        // Eğitmen ve Admin için ek ayarlar
         Route::middleware('role:instructor,admin')->group(function () {
             Volt::route('notifications', 'settings.notifications')->name('settings.notifications');
         });
     });
 
     // Kurs İşlemleri
-  Route::prefix('courses')->group(function () {
-    Volt::route('/', 'courses.index')->name('courses.index');
+    Route::prefix('courses')->group(function () {
+        Volt::route('/', 'courses.index')->name('courses.index');
+        // Volt::route('/{course}', 'courses.show')->name('courses.show');
 
-    // Kurs oluşturma
-    Route::get('/create', CreateCourses::class)
-        ->middleware(['auth', 'verified', 'role.admin.instructor'])
-        ->name('courses.create');
-
-    // Kurs düzenleme
-    Route::get('/{course}/edit', EditCourse::class)
- ->middleware(['auth', 'verified', 'role.admin.instructor'])
-
-        ->name('courses.edit');
-
-    // Kayıt işlemleri
-    Route::post('/{course}/enroll', [CourseController::class, 'enroll'])
-        ->name('courses.enroll');
-    Route::post('/{course}/unenroll', [CourseController::class, 'unenroll'])
-        ->name('courses.unenroll');
-});
-
+        // Kayıt işlemleri
+        Route::post('/{course}/enroll', [CourseController::class, 'enroll'])
+            ->name('courses.enroll');
+        Route::post('/{course}/unenroll', [CourseController::class, 'unenroll'])
+            ->name('courses.unenroll');
+    });
 
     // Rol Bazlı Özel Rotalar
     Route::middleware('role:instructor')->group(function () {
@@ -93,9 +86,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     });
 });
 
-// Test Route'u
 Route::get('/test-dashboard', function() {
-    $service = app(\App\Services\DashboardService::class);
+   $service = app(\App\Services\DashboardService::class);
+
+    // Tüm repository'leri tek tek test edin
     dd([
         'users' => app(\App\Interfaces\UserRepositoryInterface::class)->countUsers(),
         'courses' => app(\App\Interfaces\CourseRepositoryInterface::class)->countAllCourses(),
@@ -105,6 +99,49 @@ Route::get('/test-dashboard', function() {
     ]);
 });
 
-// Genel Kurs Rotaları (Herkes görebilir)
+
+
+// Kurs Oluşturma Rotaları
+
+
+
+
+
+//   Route::middleware(['auth', 'verified'])->group(function () {
+//       Route::get('/courses/create', function () {
+//           $user = Auth::user(); // auth() yerine Auth facade
+
+//           return match($user->role) {
+//               'instructor' => app(CreateCourses::class)->render(),
+//               'admin' => app(CreateCourses::class)->render(),
+//               default => redirect('/'),
+//           };
+//       })->name('courses.create');
+//   });
+
+
+
+Route::middleware(['auth', 'verified', 'role.admin.instructor'])->group(function () {
+    Route::get('/courses/create', CreateCourses::class)->name('courses.create');
+});
+
+
+// Route::middleware(['auth', 'verified'])->get('/courses/aa', CreateCourses::class)->name('courses.create');
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+//normal kullacılar için kurs listesi
 Route::get('/courses', CourseList::class)->name('courses.index');
+
 Route::get('/courses/{id}', CourseDetails::class)->name('courses.show');
