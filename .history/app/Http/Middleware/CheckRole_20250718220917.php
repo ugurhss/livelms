@@ -15,9 +15,11 @@ class CheckRole
      */
     public function handle(Request $request, Closure $next): Response
     {
-        if (!in_array(auth()->user()->role, ['admin', 'instructor'])) {
-            abort(403, 'Unauthorized action.');
-        }
+        // $user = $request->user();
+
+        // if (!$user || !in_array($user->role, ['admin', 'instructor'])) {
+        //     return redirect('/'); // Anasayfaya yönlendir
+        // }
 
         return $next($request);
     }
