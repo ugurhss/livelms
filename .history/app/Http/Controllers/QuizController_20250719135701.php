@@ -47,22 +47,17 @@ class QuizController extends Controller
                          ->with('success', 'Quiz başarıyla oluşturuldu.');
     }
 
-  public function show($courseId, $quizId)
-{
-    $quiz = $this->quizService->getQuizDetails($quizId);
-    $availability = $this->quizService->checkQuizAccess($quizId);
+    public function show($courseId, $quizId)
+    {
+        $quiz = $this->quizService->getQuizDetails($quizId);
+        $availability = $this->quizService->checkQuizAccess($quizId);
 
-    if (!$availability['available']) {
-        return redirect()->back()->with('error', $availability['message']);
+        if (!$availability['available']) {
+            return redirect()->back()->with('error', $availability['message']);
+        }
+
+        return view('quiz.show', compact('quiz', 'courseId'));
     }
-
-    return view('quiz.show', [
-        'quiz' => $quiz,
-        'courseId' => $courseId,
-        'quizId' => $quizId // Make sure to pass quizId to the view
-    ]);
-}
-
 
     public function edit($courseId, $quizId)
     {

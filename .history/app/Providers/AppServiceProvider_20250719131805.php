@@ -2,7 +2,6 @@
 
 namespace App\Providers;
 
-use App\Services\QuizService;
 use App\Repositories\QuizRepository;
 use App\Repositories\UserRepository;
 use Illuminate\Support\Facades\Blade;
@@ -75,9 +74,7 @@ $this->app->bind(
         });
                 $this->app->bind(QuizRepositoryInterface::class, QuizRepository::class);
 
-$this->app->bind(QuizService::class, function($app) {
-        return new QuizService($app->make(QuizRepositoryInterface::class));
-    });
+
     }
 
     /**

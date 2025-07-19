@@ -3,18 +3,18 @@
 namespace App\Livewire\Quiz;
 
 use Livewire\Component;
-use App\Services\QuizService;
 
 class CreateQuiz extends Component
 {
-    public $courseId;
+
+     public $courseId;
     public $title;
     public $description;
     public $time_limit;
     public $start_date;
     public $end_date;
     public $passing_score = 70;
-    public $is_published = true;
+    public $is_published = false;
 
     protected $rules = [
         'title' => 'required|string|max:255',
@@ -26,23 +26,25 @@ class CreateQuiz extends Component
         'is_published' => 'required|boolean',
     ];
 
-    public function mount($courseId)
+    protected $quizService;
+
+    public function mount($courseId, QuizService $quizService)
     {
         $this->courseId = $courseId;
+        $this->quizService = $quizService;
     }
 
-    public function submit(QuizService $quizService)
+    public function submit()
     {
         $validated = $this->validate();
         $validated['course_id'] = $this->courseId;
 
-        $quizService->createNewQuiz($validated);
+        $this->quizService->createNewQuiz($validated);
 
         session()->flash('success', 'Quiz başarıyla oluşturuldu.');
 
         return redirect()->route('courses.quizzes.index', $this->courseId);
     }
-
     public function render()
     {
         return view('livewire.quiz.create-quiz');

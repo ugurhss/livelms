@@ -7,7 +7,8 @@ use App\Services\QuizService;
 
 class CreateQuiz extends Component
 {
-    public $courseId;
+
+     public $courseId;
     public $title;
     public $description;
     public $time_limit;
@@ -26,23 +27,25 @@ class CreateQuiz extends Component
         'is_published' => 'required|boolean',
     ];
 
-    public function mount($courseId)
+    protected $quizService;
+
+    public function mount($courseId, QuizService $quizService)
     {
         $this->courseId = $courseId;
+        $this->quizService = $quizService;
     }
 
-    public function submit(QuizService $quizService)
+    public function submit()
     {
         $validated = $this->validate();
         $validated['course_id'] = $this->courseId;
 
-        $quizService->createNewQuiz($validated);
+        $this->quizService->createNewQuiz($validated);
 
         session()->flash('success', 'Quiz başarıyla oluşturuldu.');
 
         return redirect()->route('courses.quizzes.index', $this->courseId);
     }
-
     public function render()
     {
         return view('livewire.quiz.create-quiz');

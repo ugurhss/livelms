@@ -26,17 +26,25 @@ class CreateQuiz extends Component
         'is_published' => 'required|boolean',
     ];
 
+    protected $quizService;
+
+    public function __construct()
+    {
+        parent::__construct();
+        $this->quizService = app(QuizService::class);
+    }
+
     public function mount($courseId)
     {
         $this->courseId = $courseId;
     }
 
-    public function submit(QuizService $quizService)
+    public function submit()
     {
         $validated = $this->validate();
         $validated['course_id'] = $this->courseId;
 
-        $quizService->createNewQuiz($validated);
+        $this->quizService->createNewQuiz($validated);
 
         session()->flash('success', 'Quiz başarıyla oluşturuldu.');
 

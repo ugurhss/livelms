@@ -26,17 +26,25 @@ class CreateQuiz extends Component
         'is_published' => 'required|boolean',
     ];
 
+    protected $quizService;
+
+   public function render(QuizService $quizService)
+{
+    $this->quizService = $quizService;
+    return view('livewire.quiz.create-quiz');
+}
+
     public function mount($courseId)
     {
         $this->courseId = $courseId;
     }
 
-    public function submit(QuizService $quizService)
+    public function submit()
     {
         $validated = $this->validate();
         $validated['course_id'] = $this->courseId;
 
-        $quizService->createNewQuiz($validated);
+        $this->quizService->createNewQuiz($validated);
 
         session()->flash('success', 'Quiz başarıyla oluşturuldu.');
 

@@ -114,9 +114,7 @@
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                 <div class="flex justify-end space-x-2">
-                                    {{-- Görüntüle butonu (yorum satırı) --}}
-
-                                    <a href="{{ route('quizzes.show', [$courseId, $quiz->id]) }}"
+                                    {{-- <a href="{{ route('courses.quizzes.show', [$courseId, $quiz->id]) }}" --}}
                                        class="text-indigo-600 hover:text-indigo-900 p-1 rounded-full hover:bg-indigo-50"
                                        title="Görüntüle">
                                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -125,11 +123,8 @@
                                         </svg>
                                     </a>
 
-
-                                    {{-- Düzenle butonu (yorum satırı) --}}
-                                    {{--
                                     @can('edit-quiz', $quiz)
-                                    <a href="{{ route('courses.quizzes.edit', [$courseId, $quiz->id]) }}"
+                                    {{-- <a href="{{ route('courses.quizzes.edit', [$courseId, $quiz->id]) }}" --}}
                                        class="text-blue-600 hover:text-blue-900 p-1 rounded-full hover:bg-blue-50"
                                        title="Düzenle">
                                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -137,7 +132,6 @@
                                         </svg>
                                     </a>
                                     @endcan
-                                    --}}
                                 </div>
                             </td>
                         </tr>
@@ -146,8 +140,7 @@
                 </table>
             </div>
 
-            <!-- Sayfalama (yorum satırı) -->
-            {{--
+            <!-- Sayfalama -->
             @if($quizzes->hasPages())
             <div class="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
                 <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
@@ -162,7 +155,6 @@
                 </div>
             </div>
             @endif
-            --}}
         @endif
     </div>
 </div>
