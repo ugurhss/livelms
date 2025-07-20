@@ -125,56 +125,30 @@ Route::prefix('instructor')->middleware(['auth', 'verified', 'role.admin.instruc
 Route::prefix('student') ->middleware(['auth', 'verified'])->group(function () {
     Route::get('/dashboard', [StudentDashboardController::class, 'index'])->name('student.dashboard');
 });
+Route::get('/courses/{courseId}/quizzes', [QuizController::class, 'index'])
+    ->name('courses.quizzes.index')
+    ->middleware('auth');
 
 
-// Route::get('/courses/{courseId}/quizzes', [QuizController::class, 'index'])
-//     ->name('courses.quizzes.index')
-//     ->middleware('auth');
 
-//     Route::get('/courses/{courseId}/quizzes/create', [QuizController::class, 'create'])
-//     ->name('courses.quizzes.create');
+    Route::get('/courses/{courseId}/quizzes/create', [QuizController::class, 'create'])
+    ->name('courses.quizzes.create');
 
-// // Yeni quiz kaydetme
-// Route::post('/courses/{courseId}/quizzes', [QuizController::class, 'store'])
-//     ->name('courses.quizzes.store');
-// Route::get('/courses/{courseId}/quizzes/{quizId}', [QuizController::class, 'show'])
-//     ->name('quizzes.show');
+// Yeni quiz kaydetme
+Route::post('/courses/{courseId}/quizzes', [QuizController::class, 'store'])
+    ->name('courses.quizzes.store');
+Route::get('/courses/{courseId}/quizzes/{quizId}', [QuizController::class, 'show'])
+    ->name('quizzes.show');
 
-// Quiz listesi
-Route::get('/courses/{courseId}/quizzes', [QuizController::class, 'index'])->name('courses.quizzes.index');
+Route::get('/courses/{courseId}/quizzes/{quizId}/edit', [QuizController::class, 'edit'])
+    ->name('quizzes.edit');
+Route::put('/courses/{courseId}/quizzes/{quizId}', [QuizController::class, 'update'])
+    ->name('quizzes.update');
+Route::get('/courses/{courseId}/quizzes/{quizId}/delete', [QuizController::class, 'destroy'])
+    ->name('quizzes.delete');
 
-// Quiz oluşturma formu
-Route::get('/courses/{courseId}/quizzes/create', [QuizController::class, 'create'])->name('courses.quizzes.create');
 
-// Quiz oluşturma işlemi (POST)
-Route::post('/courses/{courseId}/quizzes', [QuizController::class, 'store'])->name('courses.quizzes.store');
 
-// Quiz detayını gösterme
-Route::get('/courses/{courseId}/quizzes/{quizId}', [QuizController::class, 'show'])->name('courses.quizzes.show');
-
-// Quiz düzenleme formu
-Route::get('/courses/{courseId}/quizzes/{quizId}/edit', [QuizController::class, 'edit'])->name('courses.quizzes.edit');
-
-// Quiz güncelleme işlemi (PUT)
-Route::put('/courses/{courseId}/quizzes/{quizId}', [QuizController::class, 'update'])->name('courses.quizzes.update');
-
-// Quiz silme işlemi
-Route::delete('/courses/{courseId}/quizzes/{quizId}', [QuizController::class, 'destroy'])->name('courses.quizzes.destroy');
-
-// Quiz'e soru ekleme formu
-Route::get('/courses/{courseId}/quizzes/{quizId}/questions/create', [QuizController::class, 'createQuestion'])->name('courses.quizzes.questions.create');
-
-// Quiz'e soru kaydetme işlemi
-Route::post('/courses/{courseId}/quizzes/{quizId}/questions', [QuizController::class, 'storeQuestion'])->name('courses.quizzes.questions.store');
-
-// Quiz'e başlama (öğrenci tarafından)
-Route::get('/courses/{courseId}/quizzes/{quizId}/start', [QuizController::class, 'startQuiz'])->name('courses.quizzes.start');
-
-// Quiz'e cevap gönderme (submit)
-Route::post('/courses/{courseId}/quizzes/{quizId}/submit', [QuizController::class, 'submitQuiz'])->name('courses.quizzes.submit');
-
-// Quiz sonucu görüntüleme
-Route::get('/courses/{courseId}/quizzes/{quizId}/results/{attempt}', [QuizController::class, 'showResult'])->name('courses.quizzes.result');
 
 
 

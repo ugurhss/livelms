@@ -127,18 +127,18 @@ Route::prefix('student') ->middleware(['auth', 'verified'])->group(function () {
 });
 
 
-// Route::get('/courses/{courseId}/quizzes', [QuizController::class, 'index'])
-//     ->name('courses.quizzes.index')
-//     ->middleware('auth');
+Route::get('/courses/{courseId}/quizzes', [QuizController::class, 'index'])
+    ->name('courses.quizzes.index')
+    ->middleware('auth');
 
-//     Route::get('/courses/{courseId}/quizzes/create', [QuizController::class, 'create'])
-//     ->name('courses.quizzes.create');
+    Route::get('/courses/{courseId}/quizzes/create', [QuizController::class, 'create'])
+    ->name('courses.quizzes.create');
 
-// // Yeni quiz kaydetme
-// Route::post('/courses/{courseId}/quizzes', [QuizController::class, 'store'])
-//     ->name('courses.quizzes.store');
-// Route::get('/courses/{courseId}/quizzes/{quizId}', [QuizController::class, 'show'])
-//     ->name('quizzes.show');
+// Yeni quiz kaydetme
+Route::post('/courses/{courseId}/quizzes', [QuizController::class, 'store'])
+    ->name('courses.quizzes.store');
+Route::get('/courses/{courseId}/quizzes/{quizId}', [QuizController::class, 'show'])
+    ->name('quizzes.show');
 
 // Quiz listesi
 Route::get('/courses/{courseId}/quizzes', [QuizController::class, 'index'])->name('courses.quizzes.index');

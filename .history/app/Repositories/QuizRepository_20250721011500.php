@@ -165,13 +165,5 @@ class QuizRepository implements QuizRepositoryInterface
 
         return ['available' => true, 'message' => 'Quiz is available'];
     }
-public function getQuizAttemptById($attemptId)
-{
-    return QuizAttempt::with([
-        'quiz',
-        'userAnswers' => function($query) {
-            $query->with(['question', 'answer']);
-        }
-    ])->findOrFail($attemptId);
-}
+
 }

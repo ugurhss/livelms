@@ -14,6 +14,4 @@ interface QuizRepositoryInterface
     public function submitQuizAttempt($quizId, $userId, array $answers);
     public function getQuizResults($quizId, $userId);
     public function checkQuizAvailability($quizId);
-    public function getQuizAttemptById($attemptId);
-
 }

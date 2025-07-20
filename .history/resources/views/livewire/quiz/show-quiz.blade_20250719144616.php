@@ -1,4 +1,4 @@
-
+@extends('layouts.app')
 
 @section('content')
 <div class="container">
@@ -90,3 +90,4 @@
         Quiz Listesine Dön
     </a>
 </div>
+@endsection

@@ -148,23 +148,8 @@ class QuizController extends Controller
         }
     }
 
-public function showResult($courseId, $quizId, $attemptId)
+public function getQuizAttempt($attemptId)
 {
-    try {
-        $userId = Auth()->id();
-
-        $result = $this->quizService->getQuizAttempt($attemptId);
-
-        if ($result->user_id != $userId || $result->quiz_id != $quizId) {
-            abort(403, 'Bu sonucu görüntüleme yetkiniz yok.');
-        }
-
-        // Eksik değişkenleri ekle
-        return view('quiz.result', compact('result', 'courseId', 'quizId', 'attemptId'));
-    } catch (\Exception $e) {
-        return redirect()->back()
-            ->with('error', 'Sonuç bulunamadı: ' . $e->getMessage());
-    }
+    return $this->quizRepository->getQuizAttemptById($attemptId);
 }
-
 }

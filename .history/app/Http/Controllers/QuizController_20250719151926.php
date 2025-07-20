@@ -67,8 +67,7 @@ class QuizController extends Controller
     public function edit($courseId, $quizId)
     {
         $quiz = $this->quizService->getQuizDetails($quizId);
-
-        return view('quiz.edit', compact('quiz', 'courseId','quizId'));
+        return view('quiz.edit', compact('quiz', 'courseId'));
     }
 
     public function update(Request $request, $courseId, $quizId)
@@ -100,7 +99,7 @@ class QuizController extends Controller
     public function createQuestion($courseId, $quizId)
     {
         $quiz = $this->quizService->getQuizDetails($quizId);
-        return view('quiz.questionsCreate', compact('quiz', 'courseId','quizId'));
+        return view('quiz.questionsCreate', compact('quiz', 'courseId'));
     }
 
     public function storeQuestion(Request $request, $courseId, $quizId)
@@ -127,7 +126,7 @@ class QuizController extends Controller
             return redirect()->back()->with('error', $availability['message']);
         }
 
-        return view('quiz.takes', compact('quiz', 'courseId','quizId'));
+        return view('quiz.take', compact('quiz', 'courseId'));
     }
 
     public function submitQuiz(Request $request, $courseId, $quizId)
@@ -148,23 +147,15 @@ class QuizController extends Controller
         }
     }
 
-public function showResult($courseId, $quizId, $attemptId)
-{
-    try {
-        $userId = Auth()->id();
+    public function showResult($courseId, $quizId, $attemptId)
+    {
+        $userId = auth()->id();
+        $result = $this->quizService->getQuizResults($quizId, $userId);
 
-        $result = $this->quizService->getQuizAttempt($attemptId);
-
-        if ($result->user_id != $userId || $result->quiz_id != $quizId) {
+        if ($result->id != $attemptId) {
             abort(403, 'Bu sonucu görüntüleme yetkiniz yok.');
         }
 
-        // Eksik değişkenleri ekle
-        return view('quiz.result', compact('result', 'courseId', 'quizId', 'attemptId'));
-    } catch (\Exception $e) {
-        return redirect()->back()
-            ->with('error', 'Sonuç bulunamadı: ' . $e->getMessage());
+        return view('quizzes.result', compact('result', 'courseId'));
     }
-}
-
 }
