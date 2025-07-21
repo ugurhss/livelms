@@ -22,83 +22,149 @@ use App\Http\Controllers\InstructorDashboardController;
 | Web Routes
 |--------------------------------------------------------------------------
 |
-| Here is where you can register web routes for your application. These
-| routes are loaded by the RouteServiceProvider within a group which
-| contains the "web" middleware group. Now create something great!
+| Örnek HTTPS URL'ler:
+| - Ana Sayfa: https://siteadi.com/
+| - Giriş Sayfası: https://siteadi.com/login
+| - Kayıt Sayfası: https://siteadi.com/register
 |
 */
 
 // Ana Sayfa ve Genel Rotalar
 Route::get('/', function () {
     return view('welcome');
-})->name('home');
+})->name('home'); // Örnek URL: https://siteadi.com/
 
 // Kimlik Doğrulama Rotaları
-require __DIR__.'/auth.php';
+require __DIR__.'/auth.php'; // Örnek URL'ler:
+// - https://siteadi.com/login
+// - https://siteadi.com/register
+// - https://siteadi.com/forgot-password
 
 // Authenticated Kullanıcı Rotaları
 Route::middleware(['auth', 'verified'])->group(function () {
+
     // Dashboard
     Route::get('/dashboard', function () {
-        // $user = Auth::user();
-        // return match($user->role) {
-        //     'student' => app(StudentDashboard::class)->render(),
-        //     'instructor' => app(InstructorDashboard::class)->render(),
-        //     'admin' => app(AdminDashboard::class)->render(),
-        //     default => redirect('/'),
-        // };
-    })->name('dashboard');
+        return view('dashboard');
+    })->name('dashboard'); // Örnek URL: https://siteadi.com/dashboard
 
     // Ayarlar
-    Route::prefix('settings')->group(function () {
-        Route::redirect('/', 'settings/profile');
-        Volt::route('profile', 'settings.profile')->name('settings.profile');
-        Volt::route('password', 'settings.password')->name('settings.password');
-        Volt::route('appearance', 'settings.appearance')->name('settings.appearance');
+    Route::prefix('settings')->name('settings.')->group(function () {
+        Route::redirect('/', 'settings/profile'); // Örnek URL: https://siteadi.com/settings → /settings/profile'e yönlendirir
 
-        Route::middleware('role:instructor,admin')->group(function () {
-            Volt::route('notifications', 'settings.notifications')->name('settings.notifications');
-        });
+        // Profil Ayarları
+        Volt::route('profile', 'settings.profile')->name('profile'); // Örnek URL: https://siteadi.com/settings/profile
+
+        // Şifre Değiştirme
+        Volt::route('password', 'settings.password')->name('password'); // Örnek URL: https://siteadi.com/settings/password
+
+        // Görünüm Ayarları
+        Volt::route('appearance', 'settings.appearance')->name('appearance'); // Örnek URL: https://siteadi.com/settings/appearance
     });
 
     // Kurs İşlemleri
-  Route::prefix('courses')->group(function () {
-    Volt::route('/', 'courses.index')->name('courses.index');
+    Route::prefix('courses')->name('courses.')->group(function () {
+        // Kurs Listesi
+        Volt::route('/', 'courses.index')->name('index'); // Örnek URL: https://siteadi.com/courses
 
-    // Kurs oluşturma
-    Route::get('/create', CreateCourses::class)
-        ->middleware(['auth', 'verified', 'role.admin.instructor'])
-        ->name('courses.create');
+        // Kurs Oluşturma (Admin/Eğitmen)
+        Route::get('/create', CreateCourses::class)
+            ->middleware('role.admin.instructor')
+            ->name('create'); // Örnek URL: https://siteadi.com/courses/create
 
-    // Kurs düzenleme
-    Route::get('/{course}/edit', EditCourse::class)
- ->middleware(['auth', 'verified', 'role.admin.instructor'])
+        // Kurs Düzenleme (Admin/Eğitmen)
+        Route::get('/{course}/edit', [CourseController::class,'edit'])
+            ->middleware('role.admin.instructor')
+            ->name('edit'); // Örnek URL: https://siteadi.com/courses/1/edit
 
-        ->name('courses.edit');
+        // Kursa Kayıt Olma
+        Route::post('/{course}/enroll', [CourseController::class, 'enroll'])
+            ->name('enroll'); // Örnek POST URL: https://siteadi.com/courses/1/enroll
 
-    // Kayıt işlemleri
-    Route::post('/{course}/enroll', [CourseController::class, 'enroll'])
-        ->name('courses.enroll');
-    Route::post('/{course}/unenroll', [CourseController::class, 'unenroll'])
-        ->name('courses.unenroll');
+        // Kurstan Ayrılma
+        Route::post('/{course}/unenroll', [CourseController::class, 'unenroll'])
+            ->name('unenroll'); // Örnek POST URL: https://siteadi.com/courses/1/unenroll
+    });
+
+    // Quiz İşlemleri
+    Route::prefix('courses/{courseId}/quizzes')->name('courses.quizzes.')->group(function () {
+        // Quiz Listesi
+        Route::get('/', [QuizController::class, 'index'])->name('index'); // Örnek URL: https://siteadi.com/courses/1/quizzes
+
+        // Quiz Oluşturma Formu
+        Route::get('/create', [QuizController::class, 'create'])
+            ->middleware('role.admin.instructor')
+            ->name('create'); // Örnek URL: https://siteadi.com/courses/1/quizzes/create
+
+        // Quiz Oluşturma (POST)
+        Route::post('/', [QuizController::class, 'store'])
+            ->middleware('role.admin.instructor')
+            ->name('store'); // Örnek POST URL: https://siteadi.com/courses/1/quizzes
+
+        // Quiz Detayı
+        Route::get('/{quizId}', [QuizController::class, 'show'])->name('show'); // Örnek URL: https://siteadi.com/courses/1/quizzes/1
+
+        // Quiz Düzenleme
+        Route::get('/{quizId}/edit', [QuizController::class, 'edit'])
+            ->middleware('role.admin.instructor')
+            ->name('edit'); // Örnek URL: https://siteadi.com/courses/1/quizzes/1/edit
+
+        // Quiz Güncelleme (PUT)
+        Route::put('/{quizId}', [QuizController::class, 'update'])
+            ->middleware('role.admin.instructor')
+            ->name('update'); // Örnek PUT URL: https://siteadi.com/courses/1/quizzes/1
+
+        // Quiz Silme
+        Route::delete('/{quizId}', [QuizController::class, 'destroy'])
+            ->middleware('role.admin.instructor')
+            ->name('destroy'); // Örnek DELETE URL: https://siteadi.com/courses/1/quizzes/1
+
+        // Quiz Sorusu Ekleme
+        Route::get('/{quizId}/questions/create', [QuizController::class, 'createQuestion'])
+            ->middleware('role.admin.instructor')
+            ->name('questions.create'); // Örnek URL: https://siteadi.com/courses/1/quizzes/1/questions/create
+
+        // Quiz Sorusu Kaydetme
+        Route::post('/{quizId}/questions', [QuizController::class, 'storeQuestion'])
+            ->middleware('role.admin.instructor')
+            ->name('questions.store'); // Örnek POST URL: https://siteadi.com/courses/1/quizzes/1/questions
+
+        // Quiz Başlatma (Öğrenci)
+        Route::get('/{quizId}/start', [QuizController::class, 'startQuiz'])->name('start'); // Örnek URL: https://siteadi.com/courses/1/quizzes/1/start
+
+        // Quiz Gönderme (Öğrenci)
+        Route::post('/{quizId}/submit', [QuizController::class, 'submitQuiz'])->name('submit'); // Örnek POST URL: https://siteadi.com/courses/1/quizzes/1/submit
+
+        // Quiz Sonucu
+        Route::get('/{quizId}/results/{attempt}', [QuizController::class, 'showResult'])->name('result'); // Örnek URL: https://siteadi.com/courses/1/quizzes/1/results/1
+    });
 });
 
+// Rol Bazlı Dashboard Rotaları
+Route::middleware(['auth', 'verified'])->group(function () {
+    // Admin Paneli
+    Route::prefix('admin')->name('admin.')->middleware('role.admin')->group(function () {
+        Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard'); // Örnek URL: https://siteadi.com/admin/dashboard
+    });
 
-    // Rol Bazlı Özel Rotalar
-    // Route::middleware('role:instructor')->group(function () {
-    //     Volt::route('/instructor/courses', 'instructor.courses.index')->name('instructor.courses');
-    //     Volt::route('/instructor/earnings', 'instructor.earnings')->name('instructor.earnings');
-    // });
+    // Eğitmen Paneli
+    Route::prefix('instructor')->name('instructor.')->middleware('role.admin.instructor')->group(function () {
+        Route::get('/dashboard', [InstructorDashboardController::class, 'index'])->name('dashboard'); // Örnek URL: https://siteadi.com/instructor/dashboard
+    });
 
-    // Route::middleware('role:admin')->group(function () {
-    //     Volt::route('/admin/users', 'admin.users.index')->name('admin.users');
-    //     Volt::route('/admin/courses', 'admin.courses.index')->name('admin.courses');
-    //     Volt::route('/admin/settings', 'admin.settings')->name('admin.settings');
-    // });
+    // Öğrenci Paneli
+    Route::prefix('student')->name('student.')->group(function () {
+        Route::get('/dashboard', [StudentDashboardController::class, 'index'])->name('dashboard'); // Örnek URL: https://siteadi.com/student/dashboard
+    });
 });
 
-// Test Route'u
+// Genel Kurs Rotaları (Auth gerekmez)
+Route::get('/courses', [CourseController::class, 'getPublishedCourses'])->name('courses.public.index');
+Route::get('/courses/{id}', [CourseController::class,'show'])->name('courses.public.show'); // Örnek URL: https://siteadi.com/courses/1
+
+// Test Route'u (Geliştirme)
 Route::get('/test-dashboard', function() {
+    // Test verilerini gösterir
     $service = app(\App\Services\DashboardService::class);
     dd([
         'users' => app(\App\Interfaces\UserRepositoryInterface::class)->countUsers(),
@@ -107,75 +173,5 @@ Route::get('/test-dashboard', function() {
         'revenue' => app(\App\Interfaces\EnrollmentRepositoryInterface::class)->calculateMonthlyRevenue(),
         'service_output' => $service->getSystemStats()
     ]);
-});
 
-// Genel Kurs Rotaları (Herkes görebilir)
-Route::get('/courses', CourseList::class)->name('courses.index');
-Route::get('/courses/{id}', CourseDetails::class)->name('courses.show');
-
-
-Route::prefix('admin')->name('admin.')  ->middleware(['auth', 'verified', 'role.admin.instructor'])->group(function () {
-    Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('admin.dashboard');
-});
-
-Route::prefix('instructor')->middleware(['auth', 'verified', 'role.admin.instructor'])->group(function () {
-    Route::get('/dashboard', [InstructorDashboardController::class, 'index'])->name('instructor.dashboard');
-});
-
-Route::prefix('student') ->middleware(['auth', 'verified'])->group(function () {
-    Route::get('/dashboard', [StudentDashboardController::class, 'index'])->name('student.dashboard');
-});
-
-
-// Route::get('/courses/{courseId}/quizzes', [QuizController::class, 'index'])
-//     ->name('courses.quizzes.index')
-//     ->middleware('auth');
-
-//     Route::get('/courses/{courseId}/quizzes/create', [QuizController::class, 'create'])
-//     ->name('courses.quizzes.create');
-
-// // Yeni quiz kaydetme
-// Route::post('/courses/{courseId}/quizzes', [QuizController::class, 'store'])
-//     ->name('courses.quizzes.store');
-// Route::get('/courses/{courseId}/quizzes/{quizId}', [QuizController::class, 'show'])
-//     ->name('quizzes.show');
-
-// Quiz listesi
-Route::get('/courses/{courseId}/quizzes', [QuizController::class, 'index'])->name('courses.quizzes.index');
-
-// Quiz oluşturma formu
-Route::get('/courses/{courseId}/quizzes/create', [QuizController::class, 'create'])->name('courses.quizzes.create');
-
-// Quiz oluşturma işlemi (POST)
-Route::post('/courses/{courseId}/quizzes', [QuizController::class, 'store'])->name('courses.quizzes.store');
-
-// Quiz detayını gösterme
-Route::get('/courses/{courseId}/quizzes/{quizId}', [QuizController::class, 'show'])->name('courses.quizzes.show');
-
-// Quiz düzenleme formu
-Route::get('/courses/{courseId}/quizzes/{quizId}/edit', [QuizController::class, 'edit'])->name('courses.quizzes.edit');
-
-// Quiz güncelleme işlemi (PUT)
-Route::put('/courses/{courseId}/quizzes/{quizId}', [QuizController::class, 'update'])->name('courses.quizzes.update');
-
-// Quiz silme işlemi
-Route::delete('/courses/{courseId}/quizzes/{quizId}', [QuizController::class, 'destroy'])->name('courses.quizzes.destroy');
-
-// Quiz'e soru ekleme formu
-Route::get('/courses/{courseId}/quizzes/{quizId}/questions/create', [QuizController::class, 'createQuestion'])->name('courses.quizzes.questions.create');
-
-// Quiz'e soru kaydetme işlemi
-Route::post('/courses/{courseId}/quizzes/{quizId}/questions', [QuizController::class, 'storeQuestion'])->name('courses.quizzes.questions.store');
-
-// Quiz'e başlama (öğrenci tarafından)
-Route::get('/courses/{courseId}/quizzes/{quizId}/start', [QuizController::class, 'startQuiz'])->name('courses.quizzes.start');
-
-// Quiz'e cevap gönderme (submit)
-Route::post('/courses/{courseId}/quizzes/{quizId}/submit', [QuizController::class, 'submitQuiz'])->name('courses.quizzes.submit');
-
-// Quiz sonucu görüntüleme
-Route::get('/courses/{courseId}/quizzes/{quizId}/results/{attempt}', [QuizController::class, 'showResult'])->name('courses.quizzes.result');
-
-
-
-
+})->middleware('auth'); // Örnek URL: https://siteadi.com/test-dashboard

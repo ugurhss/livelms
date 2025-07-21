@@ -101,27 +101,25 @@ protected function updateLessons(Course $course, array $lessonsData): void
     $updatedLessonIds = [];
 
     foreach ($lessonsData as $lessonData) {
-        // Ensure duration_minutes is set, default to 15 if not
-        $lessonData['duration_minutes'] = $lessonData['duration_minutes'] ?? 15;
-
         if (isset($lessonData['id'])) {
+            // Mevcut dersi güncelle
             $lesson = $course->lessons()->findOrFail($lessonData['id']);
             $lesson->update($lessonData);
             $updatedLessonIds[] = $lesson->id;
         } else {
+            // Yeni ders ekle
             $lessonData['slug'] = $this->generateUniqueLessonSlug($lessonData['title']);
             $newLesson = $course->lessons()->create($lessonData);
             $updatedLessonIds[] = $newLesson->id;
         }
     }
 
-    // Remove deleted lessons
+    // Silinen dersleri kaldır
     $deletedLessonIds = array_diff($existingLessonIds, $updatedLessonIds);
     if (!empty($deletedLessonIds)) {
         $course->lessons()->whereIn('id', $deletedLessonIds)->delete();
     }
 }
-
 
     public function deleteCourse(int $courseId): Course
     {

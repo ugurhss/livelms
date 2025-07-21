@@ -1,74 +1,109 @@
 <?php
 
 namespace App\Livewire\Courses;
-
 use Livewire\Component;
 use App\Services\CourseService;
+use App\Models\Course;
 use Illuminate\Support\Facades\Auth;
 
 class CourseDetails extends Component
 {
     public $courseId;
     public $course;
+    public $isEnrolled = false;
+    public $isInstructor = false;
+    public $totalDuration = '0 dakika';
     public $loading = true;
     public $error = null;
     public $expandedLessons = [];
     public $expandAll = false;
     public $selectedLesson = null;
-    public $enrolling = false;
- public $isEnrolled = false;
-    public $isInstructor = false;
 
-    protected $listeners = ['lessonClosed' => 'closeLessonViewer'];
+    protected $courseService;
 
-    public function mount($id)
+    public function boot()
     {
-        $this->courseId = $id;
-        $this->loadCourse();
+        $this->courseService = app(CourseService::class);
     }
 
-    public function loadCourse()
+    public function mount($courseId, $initialIsEnrolled = null, $initialIsInstructor = null)
     {
-        $this->loading = true;
-        $this->error = null;
+        $this->courseId = $courseId;
 
         try {
-            $courseService = app(CourseService::class);
-            $this->course = $courseService->getCourseById($this->courseId);
+            $this->loadCourseData();
 
-                        $this->isInstructor = Auth::user()->isInstructor() && $this->course->user_id == Auth::id();
+            if (!is_null($initialIsEnrolled)) {
+                $this->isEnrolled = $initialIsEnrolled;
+            }
 
-            // Kullanıcının kursa kayıtlı olup olmadığını kontrol et
-            // $this->isEnrolled = $courseService->checkEnrollment($this->courseId, Auth::id());
-
-            // Kullanıcının eğitmen olup olmadığını ve bu kursun sahibi olup olmadığını kontrol et
+            if (!is_null($initialIsInstructor)) {
+                $this->isInstructor = $initialIsInstructor;
+            }
 
         } catch (\Exception $e) {
-            $this->error = $e->getMessage();
-        } finally {
+            $this->error = 'Kurs bilgileri yüklenirken bir hata oluştu.';
             $this->loading = false;
+            return;
+        }
+
+        $this->loading = false;
+    }
+
+    protected function loadCourseData()
+    {
+        $this->course = $this->courseService->getCourseById($this->courseId);
+
+        if (!$this->course) {
+            abort(404);
+        }
+
+        $this->isEnrolled = auth()->check()
+            ? $this->courseService->checkEnrollment($this->courseId, auth()->id())
+            : false;
+
+        $this->isInstructor = auth()->check() && auth()->id() === $this->course->user_id;
+        $this->totalDuration = $this->calculateTotalDuration($this->course->lessons);
+    }
+
+    private function calculateTotalDuration($lessons)
+    {
+        if (!$lessons || $lessons->isEmpty()) return '0 dakika';
+
+        $totalMinutes = $lessons->sum(function($lesson) {
+            return intval($lesson->duration) ?: 15;
+        });
+
+        $hours = floor($totalMinutes / 60);
+        $minutes = $totalMinutes % 60;
+
+        return $hours > 0
+            ? sprintf("%d saat %d dakika", $hours, $minutes)
+            : sprintf("%d dakika", $minutes);
+    }
+
+    public function enrollInCourse()
+    {
+        if (!auth()->check()) {
+            return redirect()->route('login');
+        }
+
+        try {
+            $this->courseService->enrollUser($this->courseId, auth()->id());
+            $this->isEnrolled = true;
+
+            $this->dispatchBrowserEvent('show-alert', [
+                'type' => 'success',
+                'message' => 'Kursa başarıyla kaydoldunuz!'
+            ]);
+
+        } catch (\Exception $e) {
+            $this->dispatchBrowserEvent('show-alert', [
+                'type' => 'error',
+                'message' => 'Kayıt işlemi sırasında bir hata oluştu: ' . $e->getMessage()
+            ]);
         }
     }
-    public function getTotalDurationProperty()
-{
-    if (!$this->course || !$this->course->lessons) {
-        return '0 dk';
-    }
-
-    $totalMinutes = collect($this->course->lessons)->sum(function($lesson) {
-        // "15 min" gibi string'lerden sadece sayıyı al
-        return intval(preg_replace('/[^0-9]/', '', $lesson->duration ?? '15 min'));
-    });
-
-    if ($totalMinutes < 60) {
-        return $totalMinutes . ' dk';
-    }
-
-    $hours = floor($totalMinutes / 60);
-    $minutes = $totalMinutes % 60;
-
-    return $hours . ' sa ' . $minutes . ' dk';
-}
 
     public function toggleLesson($index)
     {
@@ -95,32 +130,8 @@ class CourseDetails extends Component
         $this->selectedLesson = $index;
     }
 
-    public function closeLessonViewer()
+    public function render()
     {
-        $this->selectedLesson = null;
+        return view('livewire.courses.course-details');
     }
-
-    public function enrollInCourse()
-    {
-        $this->enrolling = true;
-
-        try {
-            $courseService = app(CourseService::class);
-            $courseService->enrollUser($this->courseId, Auth::id());
-            $this->isEnrolled = true;
-            session()->flash('success', 'Successfully enrolled in the course!');
-        } catch (\Exception $e) {
-            session()->flash('error', $e->getMessage());
-        } finally {
-            $this->enrolling = false;
-        }
-    }
-
-
-
-   public function render()
-{
-    return view('livewire.courses.course-details');
-
-}
 }

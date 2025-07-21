@@ -5,17 +5,16 @@ namespace App\Livewire\Courses;
 use App\Models\Course;
 use App\Models\Category;
 use App\Models\Level;
-use Illuminate\Support\Facades\Storage;
 use Livewire\Component;
 use Livewire\WithFileUploads;
+use Illuminate\Support\Facades\Storage;
 
 class EditCourse extends Component
 {
     use WithFileUploads;
 
-    public $course;
     public $courseId;
-
+    public $course;
     public $form = [
         'title' => '',
         'description' => '',
@@ -26,12 +25,10 @@ class EditCourse extends Component
         'prerequisites' => [],
         'lessons' => [],
     ];
-
+    public $image;
+    public $currentImage;
     public $newOutcome = '';
     public $newPrerequisite = '';
-    public $currentImage;
-    public $image;
-
     public $currentLesson = [
         'title' => '',
         'description' => '',
@@ -54,7 +51,6 @@ class EditCourse extends Component
         $this->courseId = $courseId;
         $this->course = Course::with('lessons')->findOrFail($courseId);
 
-        // Yetki kontrolü
         if (auth()->id() !== $this->course->user_id) {
             abort(403, 'Bu kursu düzenleme yetkiniz yok.');
         }
@@ -68,14 +64,7 @@ class EditCourse extends Component
             'outcomes' => $this->course->outcomes ?? [],
             'prerequisites' => $this->course->prerequisites ?? [],
             'lessons' => $this->course->lessons->map(function ($lesson) {
-                return [
-                    'id' => $lesson->id,
-                    'title' => $lesson->title,
-                    'description' => $lesson->description,
-                    'video_url' => $lesson->video_url,
-                    'duration_minutes' => $lesson->duration_minutes,
-                    'is_free' => $lesson->is_free,
-                ];
+                return $lesson->only(['id', 'title', 'description', 'video_url', 'duration_minutes', 'is_free']);
             })->toArray(),
         ];
 
@@ -114,7 +103,7 @@ class EditCourse extends Component
             'currentLesson.title' => 'required|string|max:255',
             'currentLesson.description' => 'required|string',
             'currentLesson.video_url' => 'required|url',
-            'currentLesson.duration_minutes' => 'required|integer|min:1',
+    'currentLesson.duration_minutes' => 'required|integer|min:1',
         ]);
 
         $this->form['lessons'][] = $this->currentLesson;
@@ -143,70 +132,33 @@ class EditCourse extends Component
         ];
     }
 
-   public function save()
-{
-    // Validasyonu çalıştır
-    $this->validate();
+    public function save()
+    {
+        $this->validate();
 
-    // Veritabanı transaction'ı başlat
-    DB::beginTransaction();
-
-    try {
         $data = $this->form;
 
-        // Resim yükleme işlemi
         if ($this->image) {
-            // Yeni resmi yükle
-            $data['image'] = $this->image->store('course_images', 'public');
-
-            // Eski resmi sil (varsa)
-            if ($this->currentImage && Storage::disk('public')->exists($this->currentImage)) {
+            if ($this->currentImage) {
                 Storage::disk('public')->delete($this->currentImage);
             }
+            $data['image'] = $this->image->store('course_images', 'public');
+        } elseif (!$this->currentImage) {
+            $data['image'] = null;
         } else {
-            // Resim silinmişse null yap, aksi halde mevcut resmi koru
-            $data['image'] = $this->currentImage ?: null;
+            $data['image'] = $this->currentImage;
         }
 
-        // Ders verilerini işle
-        if (isset($data['lessons'])) {
-            foreach ($data['lessons'] as &$lesson) {
-                // Eksik alanları default değerlerle doldur
-                $lesson['duration_minutes'] = $lesson['duration_minutes'] ?? 30;
-                $lesson['is_free'] = $lesson['is_free'] ?? false;
-            }
-            unset($lesson); // Referansı kaldır
+        try {
+            $service = app()->make(\App\Services\CourseService::class);
+            $service->updateCourse($this->courseId, $data);
+
+            session()->flash('message', 'Kurs başarıyla güncellendi.');
+            return redirect()->route('courses.show', $this->courseId);
+        } catch (\Exception $e) {
+            $this->addError('general', 'Hata oluştu: ' . $e->getMessage());
         }
-
-        // Kursu güncelle
-        $service = app(\App\Services\CourseService::class);
-        $updatedCourse = $service->updateCourse($this->courseId, $data);
-
-        // Transaction'ı onayla
-        DB::commit();
-
-        // Başarılı yönlendirme
-        return redirect()->route('courses.show', $this->courseId)
-                         ->with('success', 'Kurs başarıyla güncellendi!');
-
-    } catch (\Exception $e) {
-        // Hata durumunda geri al
-        DB::rollBack();
-
-        // Log kaydı
-        logger()->error('Course update failed: '.$e->getMessage(), [
-            'course_id' => $this->courseId,
-            'user_id' => auth()->id(),
-            'exception' => $e
-        ]);
-
-        // Kullanıcıya hata mesajı göster
-        $this->addError('general', 'Kurs güncellenirken bir hata oluştu: '.$e->getMessage());
-
-        // Sayfada kal
-        return;
     }
-}
 
     public function render()
     {

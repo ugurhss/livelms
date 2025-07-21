@@ -15,7 +15,7 @@ class CheckRole
      */
     public function handle(Request $request, Closure $next): Response
     {
-        if (!in_array(auth()->user()->role, ['admin', 'instructor'])) {
+        if (!in_array(auth()->user()->role, ['admin', 'instructor', 'student'])) {
             abort(403, 'Unauthorized action.');
         }
 

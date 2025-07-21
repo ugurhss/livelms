@@ -20,10 +20,36 @@ class CourseRepository implements CourseRepositoryInterface
     }
 
     public function getPublishedCourses(array $filters = []): LengthAwarePaginator
-    {
-        $filters['status'] = 'published';
-        return $this->getAllCourses($filters);
-    }
+{
+    return Course::query()
+        ->with(['category',  'instructor'])
+        ->when($filters['category'] ?? false, function ($query, $category) {
+            $query->whereHas('category', function($q) use ($category) {
+                $q->where('slug', $category);
+            });
+        })
+        ->when($filters['level'] ?? false, function ($query, $level) {
+            $query->whereHas('difficulty', function($q) use ($level) {
+                $q->where('slug', $level);
+            });
+        })
+        ->when($filters['status'] ?? false, function ($query, $status) {
+            $query->where('status', $status);
+        }, function ($query) {
+            $query->where('status', 'published');
+        })
+        ->when($filters['search'] ?? false, function ($query, $search) {
+            $query->where(function($q) use ($search) {
+                $q->where('title', 'like', "%$search%")
+                  ->orWhere('description', 'like', "%$search%");
+            });
+        })
+        ->withAvg('reviews', 'rating')
+        ->withCount('reviews')
+        ->withCount('enrollments as students_count')
+        ->orderBy('created_at', 'desc')
+        ->paginate($filters['per_page'] ?? 9);
+}
 
     public function getCourseById(int $courseId): Course
     {
@@ -107,14 +133,12 @@ public function updateCourse(int $courseId, array $courseDetails): Course
         });
     }
 
-    public function checkEnrollment(int $courseId, int $userId): bool
-    {
-        return Course::where('id', $courseId)
-            ->whereHas('students', function($query) use ($userId) {
-                $query->where('user_id', $userId);
-            })
-            ->exists();
-    }
+   public function checkEnrollment(int $courseId, int $userId): bool
+{
+    return Enrollment::where('course_id', $courseId)
+        ->where('user_id', $userId)
+        ->exists();
+}
 
     public function getCourseStatistics(int $courseId): array
     {

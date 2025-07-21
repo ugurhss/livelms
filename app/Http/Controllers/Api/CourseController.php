@@ -2,279 +2,239 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Http\Controllers\Controller;
-use App\Http\Requests\CourseRequest;
+use Illuminate\Http\Request;
 use App\Services\CourseService;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
+use App\Http\Controllers\Controller;
+use App\Http\Requests\CourseRequest;
+use App\Exceptions\UnauthorizedAccessException;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 
 class CourseController extends Controller
 {
-    protected $service;
+    private CourseService $courseService;
 
-    public function __construct(CourseService $service)
+    public function __construct(CourseService $courseService)
     {
-       $this->service = $service;
-        $this->middleware('auth:api')->except(['index', 'show']);
+        $this->courseService = $courseService;
+
+        // Sadece auth middleware'ini kullanıyoruz çünkü bazı metodlar herkese açık
+
     }
 
-    public function index(Request $request): JsonResponse
+    /**
+     * Tüm kursları listeler (admin paneli için)
+     */
+    public function index(Request $request)
     {
-        try {
-            $courses = $this->service->getPublishedCourses($request->all());
-            return response()->json([
-                'success' => true,
-                'data' => $courses
-            ]);
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => $e->getMessage()
-            ], 400);
-        }
+        $courses = $this->courseService->getAllCourses($request->all());
+        return view('admin.courses.index', compact('courses'));
     }
 
-    public function show(int $id): JsonResponse
+    /**
+     * Yayınlanmış kursları listeler (ana sayfa için)
+     */
+    public function getPublishedCourses(Request $request)
     {
-        try {
-            $course = $this->service->getCourseDetails($id);
-            return response()->json([
-                'success' => true,
-                'data' => $course
-            ]);
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => $e->getMessage()
-            ], 404);
-        }
+        return view('course.CourseList');
     }
 
-   public function store(Request $request): JsonResponse
+    /**
+     * Popüler kursları getirir (ana sayfa sidebar vb. için)
+     */
+    public function getPopularCourses()
+    {
+        $popularCourses = $this->courseService->getPopularCourses();
+        return view('partials.popular-courses', compact('popularCourses'));
+    }
+
+    /**
+     * Tek bir kursun detayını gösterir
+     */
+   public function show($id)
 {
-    try {
-        // Verileri doğrula
-        $validated = $this->validateRequest($request);
+    $course = $this->courseService->getCourseById($id);
 
-        // Thumbnail'i işle (eğer varsa)
-        if ($request->has('thumbnail') && $request->thumbnail) {
-            $validated['thumbnail'] = $this->storeBase64Image($request->thumbnail);
-        } else {
-            $validated['thumbnail'] = null;
-        }
-
-        // Kullanıcı ID'sini ekle
-        $validated['user_id'] = auth()->id();
-
-        // Kursu oluştur
-        $course = $this->service->createCourse($validated);
-
-        return response()->json([
-            'success' => true,
-            'data' => $course,
-            'message' => 'Kurs başarıyla oluşturuldu'
-        ], 201);
-
-    } catch (\Exception $e) {
-        return response()->json([
-            'success' => false,
-            'message' => $e->getMessage()
-        ], 400);
+    if (!$course) {
+        abort(404);
     }
-}
 
-protected function validateRequest(Request $request): array
-{
-    return $request->validate([
-        'title' => 'required|string|max:255',
-        'description' => 'required|string',
-        'category' => 'nullable|string',
-        'level' => 'required|string|in:beginner,intermediate,advanced',
-        'price' => 'required|numeric|min:0',
-        'original_price' => 'required|numeric|min:0',
-        'thumbnail' => 'nullable|string', // base64 encoded image
-        'outcomes' => 'required|array',
-        'outcomes.*' => 'required|string',
-        'prerequisites' => 'required|array',
-        'prerequisites.*' => 'required|string',
-        'lessons' => 'required|array',
-        'lessons.*.title' => 'required|string|max:255',
-        'lessons.*.description' => 'required|string',
-        'lessons.*.duration_minutes' => 'required|integer|min:1',
-        'lessons.*.video_url' => 'required|url',
+    return view('course.show', [
+        'course' => $course,
+        'isEnrolled' => auth()->check() ? $this->courseService->checkEnrollment($id, auth()->id()) : false,
+        'isInstructor' => auth()->check() && auth()->id() === $course->user_id,
+        'totalDuration' => $this->calculateTotalDuration($course->lessons),
     ]);
 }
 
-protected function storeBase64Image(string $base64): ?string
+private function calculateTotalDuration($lessons)
+{
+    if (!$lessons) return '0 dakika';
+
+    $totalMinutes = $lessons->sum(function($lesson) {
+        return intval($lesson->duration) ?: 15;
+    });
+
+    $hours = floor($totalMinutes / 60);
+    $minutes = $totalMinutes % 60;
+
+    return $hours > 0
+        ? sprintf("%d saat %d dakika", $hours, $minutes)
+        : sprintf("%d dakika", $minutes);
+}
+
+    /**
+     * Kurs oluşturma formunu gösterir
+     */
+    public function create()
+    {
+        return view('instructor.courses.create');
+    }
+
+    /**
+     * Yeni kurs oluşturur
+     */
+    public function store(StoreCourseRequest $request)
+    {
+        $course = $this->courseService->createCourse($request->validated());
+        return redirect()->route('courses.show', $course->id)
+            ->with('success', 'Kurs başarıyla oluşturuldu!');
+    }
+
+    /**
+     * Kurs düzenleme formunu gösterir
+     */
+   public function edit($id)
+{
+    $course = $this->courseService->getCourseById($id);
+
+    // Eğitmen kontrolü
+    if (auth()->id() !== $course->user_id) {
+        abort(403, 'Bu kursu düzenleme yetkiniz yok');
+    }
+
+    return view('course.edit', compact('course'));
+}
+
+    /**
+     * Kurs bilgilerini günceller
+     */
+ public function update(Request $request, $id)
 {
     try {
-        // Base64'ün başlık kısmını kaldır (eğer varsa)
-        if (strpos($base64, ';base64,') !== false) {
-            [$_, $base64] = explode(';base64,', $base64);
-        }
+        $course = $this->courseService->updateCourse($id, $request->validated());
 
-        // Base64'ü decode et
-        $imageData = base64_decode($base64);
+        return redirect()
+            ->route('courses.show', $course->id)
+            ->with('success', 'Kurs başarıyla güncellendi!');
 
-        // Resim mi kontrol et
-        if (!@imagecreatefromstring($imageData)) {
-            throw new \Exception('Geçersiz resim formatı');
-        }
+    } catch (UnauthorizedAccessException $e) {
+        abort(403, 'Bu kursu düzenleme yetkiniz yok');
 
-        // Benzersiz dosya adı oluştur
-        $fileName = 'thumbnails/' . uniqid() . '.jpg';
-
-        // Dosyayı kaydet
-        \Storage::disk('public')->put($fileName, $imageData);
-
-        return $fileName;
+    } catch (ModelNotFoundException $e) {
+        abort(404, 'Kurs bulunamadı');
 
     } catch (\Exception $e) {
-        Log::error('Thumbnail kaydedilemedi: ' . $e->getMessage());
-        return null;
+        Log::error('Course update failed: '.$e->getMessage(), [
+            'course_id' => $id,
+            'user_id' => auth()->id(),
+            'data' => $request->validated()
+        ]);
+
+        return back()
+            ->withInput()
+            ->with('error', 'Kurs güncellenirken bir hata oluştu. Lütfen tekrar deneyin.');
     }
 }
 
-    public function update(Request $request, int $id): JsonResponse
+    /**
+     * Kursu siler
+     */
+    public function destroy($id)
     {
-        try {
-            $course = $this->service->updateCourse($id, $request->validated());
-            return response()->json([
-                'success' => true,
-                'data' => $course,
-                'message' => 'Kurs başarıyla güncellendi'
-            ]);
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => $e->getMessage()
-            ], 400);
-        }
+        $this->courseService->deleteCourse($id);
+        return redirect()->route('instructor.courses')
+            ->with('success', 'Kurs başarıyla silindi!');
     }
 
-    public function destroy(int $id): JsonResponse
+    /**
+     * Kullanıcıyı kursa kaydeder
+     */
+    public function enroll($courseId)
     {
-        try {
-            $this->service->deleteCourse($id);
-            return response()->json([
-                'success' => true,
-                'message' => 'Kurs başarıyla silindi'
-            ]);
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => $e->getMessage()
-            ], 400);
-        }
+        $this->courseService->enrollUser($courseId, Auth::id());
+        return back()->with('success', 'Kursa başarıyla kaydoldunuz!');
     }
 
-    public function enroll(Request $request, int $courseId): JsonResponse
+    /**
+     * Kullanıcının kurs kaydını siler
+     */
+    public function unenroll($courseId)
     {
-        try {
-            $this->service->enrollUser($courseId, $request->user()->id);
-            return response()->json([
-                'success' => true,
-                'message' => 'Kursa başarıyla kaydoldunuz'
-            ]);
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => $e->getMessage()
-            ], 400);
-        }
+        $this->courseService->unenrollUser($courseId, Auth::id());
+        return back()->with('success', 'Kurs kaydınız iptal edildi.');
     }
 
-    public function unenroll(Request $request, int $courseId): JsonResponse
+    /**
+     * Eğitmenin kurslarını listeler
+     */
+    public function instructorCourses(Request $request)
     {
-        try {
-            $this->service->unenrollUser($courseId, $request->user()->id);
-            return response()->json([
-                'success' => true,
-                'message' => 'Kurs kaydınız iptal edildi'
-            ]);
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => $e->getMessage()
-            ], 400);
-        }
+        $courses = $this->courseService->getInstructorCourses(Auth::id(), $request->all());
+        return view('instructor.courses.index', compact('courses'));
     }
 
-    public function instructorCourses(Request $request): JsonResponse
+    /**
+     * Kullanıcının kayıtlı olduğu kursları listeler
+     */
+    public function enrolledCourses()
     {
-        try {
-            $courses = $this->service->getInstructorCourses($request->user()->id, $request->all());
-            return response()->json([
-                'success' => true,
-                'data' => $courses
-            ]);
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => $e->getMessage()
-            ], 400);
-        }
+        $courses = $this->courseService->getEnrolledCourses(Auth::id());
+        return view('student.courses', compact('courses'));
     }
 
-    public function enrolledCourses(Request $request): JsonResponse
+    /**
+     * Kurs istatistiklerini gösterir
+     */
+    public function stats($courseId)
     {
-        try {
-            $courses = $this->service->getEnrolledCourses($request->user()->id);
-            return response()->json([
-                'success' => true,
-                'data' => $courses
-            ]);
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => $e->getMessage()
-            ], 400);
-        }
+        $stats = $this->courseService->getCourseStatistics($courseId);
+        return view('courses.stats', compact('stats'));
     }
 
-    public function stats(int $courseId): JsonResponse
+    /**
+     * Kurs arama sonuçlarını gösterir
+     */
+    public function search(Request $request)
     {
-        try {
-            $stats = $this->service->getCourseStatistics($courseId);
-            return response()->json([
-                'success' => true,
-                'data' => $stats
-            ]);
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => $e->getMessage()
-            ], 403);
-        }
+        $courses = $this->courseService->searchCourses($request->query('q'), $request->all());
+        return view('courses.search', compact('courses'));
     }
 
-    public function popularCourses(): JsonResponse
-{
-    try {
-        $courses = $this->service->getPopularCourses();
-        return response()->json([
-            'success' => true,
-            'data' => $courses
-        ]);
-    } catch (\Exception $e) {
-        return response()->json([
-            'success' => false,
-            'message' => $e->getMessage()
-        ], 400);
-    }}
-
-    public function search(Request $request): JsonResponse
+    /**
+     * Öğrencinin kurs ilerlemesini gösterir
+     */
+    public function progress()
     {
-       $request->validate(['query' => 'required|string|min:3']);
+        $courses = $this->courseService->getStudentCoursesWithProgress(Auth::id());
+        return view('student.progress', compact('courses'));
+    }
 
-        try {
-            $courses = $this->service->searchCourses(
-                $request->input('query'), // string olarak al
-                $request->except('query') // diğer filtreler
-            );
-            return response()->json($courses);
-        } catch (\Exception $e) {
-            return response()->json(['error' => $e->getMessage()], 400);
-        }
+    /**
+     * Eğitmen istatistiklerini gösterir
+     */
+    public function instructorStats()
+    {
+        $instructorId = Auth::id();
+        $totalStudents = $this->courseService->getTotalStudentsForInstructor($instructorId);
+        $averageRating = $this->courseService->getAverageRatingForInstructor($instructorId);
+        $completionRate = $this->courseService->getCompletionRateForInstructor($instructorId);
+
+        return view('instructor.stats', compact(
+            'totalStudents',
+            'averageRating',
+            'completionRate'
+        ));
     }
 }

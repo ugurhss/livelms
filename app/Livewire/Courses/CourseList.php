@@ -5,6 +5,7 @@ namespace App\Livewire\Courses;
 use Livewire\Component;
 use Livewire\WithPagination;
 use App\Services\CourseService;
+use App\Models\Category;
 use Illuminate\Support\Facades\Auth;
 
 class CourseList extends Component
@@ -18,13 +19,43 @@ class CourseList extends Component
         'search' => ''
     ];
 
-    protected $queryString = [
-        'filters' => ['except' => ['category' => '', 'level' => '', 'status' => '', 'search' => '']]
+    // Mevcut seviyeleri tanımla
+    public $levels = [
+        'beginner' => 'Beginner',
+        'intermediate' => 'Intermediate',
+        'advanced' => 'Advanced'
     ];
+
+    protected $queryString = [
+        'filters' => ['except' => [
+            'category' => '',
+            'level' => '',
+            'status' => '',
+            'search' => ''
+        ]]
+    ];
+
+    public $user;
 
     public function mount()
     {
         $this->user = Auth::user();
+    }
+
+    public function clearFilters()
+    {
+        $this->reset('filters');
+        $this->resetPage();
+    }
+
+    public function getHasFiltersProperty()
+    {
+        return !empty(array_filter($this->filters));
+    }
+
+    public function isEnrolled($courseId)
+    {
+        return app(CourseService::class)->checkEnrollment($courseId, $this->user->id);
     }
 
     public function render(CourseService $courseService)
@@ -40,23 +71,9 @@ class CourseList extends Component
         return view('livewire.courses.course-list', [
             'courses' => $courses,
             'user' => $this->user,
-            'hasFilters' => $this->hasFilters()
+            'hasFilters' => $this->hasFilters,
+            'categories' => Category::all(),
+            'levels' => $this->levels // View'a seviyeleri gönder
         ]);
-    }
-
-    public function clearFilters()
-    {
-        $this->reset('filters');
-    }
-
-    protected function hasFilters()
-    {
-        return !empty(array_filter($this->filters));
-    }
-
-    public function isEnrolled($courseId)
-    {
-        // Bu metod CourseService'e taşınabilir
-        return $this->user->enrolledCourses()->where('course_id', $courseId)->exists();
     }
 }

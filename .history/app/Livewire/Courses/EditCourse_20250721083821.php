@@ -143,70 +143,32 @@ class EditCourse extends Component
         ];
     }
 
-   public function save()
-{
-    // Validasyonu çalıştır
-    $this->validate();
+    public function save()
+    {
+        $this->validate();
 
-    // Veritabanı transaction'ı başlat
-    DB::beginTransaction();
+        try {
+            $data = $this->form;
 
-    try {
-        $data = $this->form;
+            if ($this->image) {
+                $data['image'] = $this->image->store('course_images', 'public');
 
-        // Resim yükleme işlemi
-        if ($this->image) {
-            // Yeni resmi yükle
-            $data['image'] = $this->image->store('course_images', 'public');
-
-            // Eski resmi sil (varsa)
-            if ($this->currentImage && Storage::disk('public')->exists($this->currentImage)) {
-                Storage::disk('public')->delete($this->currentImage);
+                if ($this->currentImage) {
+                    Storage::disk('public')->delete($this->currentImage);
+                }
+            } else {
+                $data['image'] = $this->currentImage;
             }
-        } else {
-            // Resim silinmişse null yap, aksi halde mevcut resmi koru
-            $data['image'] = $this->currentImage ?: null;
+
+            $service = app(\App\Services\CourseService::class);
+            $service->updateCourse($this->courseId, $data);
+
+            return redirect()->route('courses.show', $this->courseId)
+                             ->with('message', 'Kurs başarıyla güncellendi!');
+        } catch (\Exception $e) {
+            $this->addError('general', 'Kurs güncellenirken bir hata oluştu: '.$e->getMessage());
         }
-
-        // Ders verilerini işle
-        if (isset($data['lessons'])) {
-            foreach ($data['lessons'] as &$lesson) {
-                // Eksik alanları default değerlerle doldur
-                $lesson['duration_minutes'] = $lesson['duration_minutes'] ?? 30;
-                $lesson['is_free'] = $lesson['is_free'] ?? false;
-            }
-            unset($lesson); // Referansı kaldır
-        }
-
-        // Kursu güncelle
-        $service = app(\App\Services\CourseService::class);
-        $updatedCourse = $service->updateCourse($this->courseId, $data);
-
-        // Transaction'ı onayla
-        DB::commit();
-
-        // Başarılı yönlendirme
-        return redirect()->route('courses.show', $this->courseId)
-                         ->with('success', 'Kurs başarıyla güncellendi!');
-
-    } catch (\Exception $e) {
-        // Hata durumunda geri al
-        DB::rollBack();
-
-        // Log kaydı
-        logger()->error('Course update failed: '.$e->getMessage(), [
-            'course_id' => $this->courseId,
-            'user_id' => auth()->id(),
-            'exception' => $e
-        ]);
-
-        // Kullanıcıya hata mesajı göster
-        $this->addError('general', 'Kurs güncellenirken bir hata oluştu: '.$e->getMessage());
-
-        // Sayfada kal
-        return;
     }
-}
 
     public function render()
     {

@@ -114,7 +114,7 @@
                 <input type="text" wire:model="currentLesson.title" placeholder="Ders Başlığı" class="input w-full" />
                 <textarea wire:model="currentLesson.description" placeholder="Ders Açıklaması" class="textarea w-full"></textarea>
                 <input type="text" wire:model="currentLesson.video_url" placeholder="Video URL" class="input w-full" />
-<input type="number" wire:model="currentLesson.duration_minutes" placeholder="Süre (dk)" class="input w-full" />
+                <input type="number" wire:model="currentLesson.duration" placeholder="Süre (dk)" class="input w-full" />
                 <label class="inline-flex items-center">
                     <input type="checkbox" wire:model="currentLesson.is_free" class="mr-2"> Ücretsiz
                 </label>
