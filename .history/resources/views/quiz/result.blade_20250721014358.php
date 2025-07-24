@@ -1,9 +1,10 @@
 <x-layouts.app>
     <div class="container mx-auto px-4 py-8">
-        <h1 class="text-2xl font-bold mb-6">Soru Oluştur</h1>
+        <h1 class="text-2xl font-bold mb-6">Quiz Sonuçları</h1>
 
-        @isset($courseId, $quizId)
-            @livewire('quiz.questions-create', [
+        @isset($courseId, $quizId, $attemptId)
+            @livewire('quiz.result', [
+                'attemptId' => $attemptId,
                 'courseId' => $courseId,
                 'quizId' => $quizId
             ])
