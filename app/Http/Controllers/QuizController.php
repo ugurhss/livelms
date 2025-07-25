@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Course;
 use Illuminate\Http\Request;
 use App\Services\QuizService;
+use Illuminate\Support\Facades\Log;
 
 class QuizController extends Controller
 {
@@ -31,90 +32,115 @@ class QuizController extends Controller
     }
 
     // Quiz kaydet
-    public function store(Request $request)
-    {
-        $validated = $request->validate([
-            'course_id' => 'required|exists:courses,id',
-            'title' => 'required|string|max:255',
-            'description' => 'nullable|string',
-            'time_limit' => 'nullable|integer',
-            'start_date' => 'nullable|date',
-            'end_date' => 'nullable|date|after_or_equal:start_date',
-            'passing_score' => 'required|integer|min:0|max:100',
-            'is_published' => 'boolean',
-            'questions' => 'required|array|min:1',
-            'questions.*.question_text' => 'required|string',
-            'questions.*.question_type' => 'required|in:multiple_choice,true_false,short_answer',
-            'questions.*.points' => 'required|integer|min:1',
-            'questions.*.answers' => 'required|array|min:1',
-            'questions.*.answers.*.answer_text' => 'required|string',
-            'questions.*.answers.*.is_correct' => 'required_if:questions.*.question_type,multiple_choice,true_false|boolean',
-        ]);
+  public function store(Request $request)
+{
+    $validated = $request->validate([
+        'course_id' => 'required|exists:courses,id',
+        'title' => 'required|string|max:255',
+        'description' => 'nullable|string',
+        'time_limit' => 'nullable|integer',
+        'start_date' => 'nullable|date',
+        'end_date' => 'nullable|date|after_or_equal:start_date',
+        'passing_score' => 'required|integer|min:0|max:100',
+        'is_published' => 'boolean',
+        'questions' => 'required|array|min:1',
+        'questions.*.question_text' => 'required|string',
+        'questions.*.question_type' => 'required|in:multiple_choice,true_false,short_answer',
+        'questions.*.points' => 'required|integer|min:1',
+        'questions.*.answers' => 'required|array|min:1',
+        'questions.*.answers.*.answer_text' => 'required|string',
+        'questions.*.answers.*.is_correct' => 'required_if:questions.*.question_type,multiple_choice,true_false|boolean',
+    ]);
 
-        // Quiz oluştur
-        $quiz = $this->quizService->createNewQuiz([
-            'course_id' => $validated['course_id'],
-            'title' => $validated['title'],
-            'description' => $validated['description'],
-            'time_limit' => $validated['time_limit'],
-            'start_date' => $validated['start_date'],
-            'end_date' => $validated['end_date'],
-            'passing_score' => $validated['passing_score'],
-            'is_published' => $validated['is_published'] ?? false,
-        ]);
+    // Quiz oluştur
+    $quiz = $this->quizService->createNewQuiz([
+        'course_id' => $validated['course_id'],
+        'title' => $validated['title'],
+        'description' => $validated['description'],
+        'time_limit' => $validated['time_limit'],
+        'start_date' => $validated['start_date'],
+        'end_date' => $validated['end_date'],
+        'passing_score' => $validated['passing_score'],
+        'is_published' => $validated['is_published'] ?? false,
+    ]);
 
-        // Soruları ekle
-        foreach ($validated['questions'] as $questionData) {
-            $this->quizService->addQuestionToQuiz($quiz->id, $questionData);
-        }
-
-        return redirect()->route('courses.quizzes.show', $quiz->id)
-            ->with('success', 'Quiz başarıyla oluşturuldu!');
+    // Soruları ekle
+    foreach ($validated['questions'] as $questionData) {
+        $this->quizService->addQuestionToQuiz($quiz->id, $questionData);
     }
+    // dd($quiz->course_id, $quiz->id); // Değerlerin gerçekten dolu olduğunu teyit edin
 
+// Yönlendirmede modelin ID'si alınır
+return redirect()->route('courses.quizzes.show', [
+    'courseId' => $quiz->course_id, // Quiz'in bağlı olduğu kurs ID
+    'quizId' => $quiz->id          // Yeni oluşturulan quiz ID
+]);
+}
     // Quiz düzenleme formunu göster
     public function edit($id)
     {
         $quiz = $this->quizService->getQuizDetails($id);
         $courses = Course::all();
-        return view('quizzes.edit', compact('quiz', 'courses'));
+        return view('quiz.edit', compact('quiz', 'courses'));
     }
 
     // Quiz güncelle
-    public function update(Request $request, $id)
-    {
-        $validated = $request->validate([
-            'course_id' => 'required|exists:courses,id',
-            'title' => 'required|string|max:255',
-            'description' => 'nullable|string',
-            'time_limit' => 'nullable|integer',
-            'start_date' => 'nullable|date',
-            'end_date' => 'nullable|date|after_or_equal:start_date',
-            'passing_score' => 'required|integer|min:0|max:100',
-            'is_published' => 'boolean',
-        ]);
-
-        $this->quizService->updateQuizDetails($id, $validated);
-
-        return redirect()->route('courses.quizzes.show', $id)
-            ->with('success', 'Quiz başarıyla güncellendi!');
-    }
-
-
-  public function show($courseId, $quizId)
+public function update(Request $request, $id)
 {
-    $quiz = $this->quizService->getQuizDetails($quizId);
-    $availability = $this->quizService->checkQuizAccess($quizId);
+    $validated = $request->validate([
+        'course_id' => 'required|exists:courses,id',
+        'title' => 'required|string|max:255',
+        'description' => 'nullable|string',
+        'time_limit' => 'nullable|integer',
+        'start_date' => 'nullable|date',
+        'end_date' => 'nullable|date|after_or_equal:start_date',
+        'passing_score' => 'required|integer|min:0|max:100',
+        'is_published' => 'boolean',
+        'questions' => 'required|array|min:1',
+        'questions.*.question_text' => 'required|string',
+        'questions.*.question_type' => 'required|in:multiple_choice,true_false,short_answer',
+        'questions.*.points' => 'required|integer|min:1',
+        'questions.*.answers' => 'required|array|min:1',
+        'questions.*.answers.*.answer_text' => 'required|string',
+        'questions.*.answers.*.is_correct' => 'required_if:questions.*.question_type,multiple_choice,true_false|boolean',
+    ]);
 
-    if (!$availability['available']) {
-        return redirect()->back()->with('error', $availability['message']);
+    // Quiz'i güncelle
+    $quiz = $this->quizService->updateQuizDetails($id, [
+        'course_id' => $validated['course_id'],
+        'title' => $validated['title'],
+        'description' => $validated['description'],
+        'time_limit' => $validated['time_limit'],
+        'start_date' => $validated['start_date'],
+        'end_date' => $validated['end_date'],
+        'passing_score' => $validated['passing_score'],
+        'is_published' => $validated['is_published'] ?? false,
+    ]);
+
+    // Önceki soruları sil (isteğe bağlı)
+
+    // Yeni soruları ekle
+    foreach ($validated['questions'] as $questionData) {
+        $this->quizService->addQuestionToQuiz($quiz->id, $questionData);
     }
 
-    return view('quiz.show', [
-        'quiz' => $quiz,
-        'courseId' => $courseId,
-        'quizId' => $quizId // Make sure to pass quizId to the view
-    ]);
+    return redirect()->route('courses.quizzes.show', [
+        'courseId' => $quiz->course_id,
+        'quizId' => $quiz->id
+    ])->with('success', 'Quiz başarıyla güncellendi!');
+}
+
+
+public function show($courseId, $quizId)
+{
+    // Bu satırları ekleyin
+
+    $quiz = $this->quizService->getQuizDetails($quizId);
+    if (!$quiz) {
+        abort(404, 'Quiz bulunamadı');
+    }
+
+    return view('quiz.show', compact('quiz', 'courseId'));
 }
 
 

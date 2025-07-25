@@ -30,11 +30,12 @@ class QuizRepository implements QuizRepositoryInterface
     {
         return Quiz::create($quizDetails);
     }
-
-    public function updateQuiz($quizId, array $newDetails)
-    {
-        return Quiz::whereId($quizId)->update($newDetails);
-    }
+public function updateQuiz($quizId, array $newDetails)
+{
+    $quiz = Quiz::findOrFail($quizId);
+    $quiz->update($newDetails);
+    return $quiz; // Güncellenmiş quiz nesnesini döndür
+}
 
     public function deleteQuiz($quizId)
     {
