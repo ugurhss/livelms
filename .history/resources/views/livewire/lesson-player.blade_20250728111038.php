@@ -1,0 +1,126 @@
+<div x-data="{ isOpen: @entangle('isOpen') }"
+     x-show="isOpen"
+     class="hs-overlay hidden size-full fixed top-0 start-0 z-[80] overflow-x-hidden overflow-y-auto pointer-events-none"
+     role="dialog"
+     tabindex="-1"
+     aria-labelledby="lesson-player-modal">
+
+    <div class="hs-overlay-open:mt-7 hs-overlay-open:opacity-100 hs-overlay-open:duration-500 mt-0 opacity-0 ease-out transition-all sm:max-w-7xl sm:w-full m-3 h-[calc(100%-56px)] sm:mx-auto">
+        <div class="max-h-full overflow-hidden flex flex-col bg-white border border-gray-200 shadow-2xs rounded-xl pointer-events-auto">
+            <!-- Header -->
+            <div class="flex justify-between items-center py-3 px-4 border-b border-gray-200">
+                <h3 id="lesson-player-modal" class="font-bold text-gray-800">
+                    {{ $lesson->title ?? 'Ders İzleyici' }}
+                </h3>
+                <button type="button"
+                        class="size-8 inline-flex justify-center items-center gap-x-2 rounded-full border border-transparent bg-gray-100 text-gray-800 hover:bg-gray-200 focus:outline-none focus:bg-gray-200 disabled:opacity-50 disabled:pointer-events-none"
+                        aria-label="Close"
+                        x-on:click="isOpen = false">
+                    <span class="sr-only">Close</span>
+                    <svg class="shrink-0 size-4" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M18 6 6 18"/>
+                        <path d="m6 6 12 12"/>
+                    </svg>
+                </button>
+            </div>
+
+            <!-- Body - Two Column Layout -->
+            <div class="flex flex-1 overflow-hidden">
+                <!-- Left Column - Curriculum (30%) -->
+                <div class="hidden lg:block w-5/12 bg-white border-r border-gray-200 overflow-y-auto">
+                    <div class="p-4 sticky top-0 bg-white border-b border-gray-200 z-10">
+                        <h4 class="font-bold text-gray-800">Kurs Müfredatı</h4>
+                        <div class="mt-1 flex items-center text-sm text-gray-500">
+                            <span>{{ $course->completed_lessons_count }}/{{ $course->lessons_count }} tamamlandı</span>
+                            <span class="mx-2">•</span>
+                            <span>{{ $course->progress_percentage }}%</span>
+                        </div>
+                    </div>
+
+                    <div class="divide-y divide-gray-200">
+                        @foreach($course->lessons as $index => $courseLesson)
+                            <div class="p-4 hover:bg-gray-50 cursor-pointer transition-colors
+                                    {{ $lesson && $lesson->id === $courseLesson->id ? 'bg-indigo-50' : '' }}"
+                                 wire:click="loadLesson({{ $courseLesson->id }})">
+                                <div class="flex items-start">
+                                    <div class="mr-3 pt-0.5">
+                                        <div class="w-6 h-6 rounded-full border border-gray-300 flex items-center justify-center text-gray-400">
+                                            {{ $index + 1 }}
+                                        </div>
+                                    </div>
+                                    <div class="flex-1">
+                                        <h5 class="font-medium text-gray-900">{{ $courseLesson->title }}</h5>
+                                        <div class="mt-1 flex items-center text-sm text-gray-500">
+                                            <span>{{ $courseLesson->duration }} dakika</span>
+                                            @if($courseLesson->is_free)
+                                                <span class="ml-2 px-1.5 py-0.5 text-xs bg-green-100 text-green-800 rounded">Ücretsiz</span>
+                                            @endif
+                                        </div>
+                                    </div>
+                                    @if($lesson && $lesson->id === $courseLesson->id)
+                                        <svg class="w-5 h-5 text-indigo-600 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7" />
+                                        </svg>
+                                    @endif
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
+
+                <!-- Right Column - Video Player (70%) -->
+                <div class="w-full lg:w-7/12 flex flex-col">
+                    @if($lesson)
+                        <div class="flex-1 bg-black flex items-center justify-center">
+                            @if($videoType === 'youtube')
+                                <iframe class="w-full aspect-video"
+                                        src="https://www.youtube.com/embed/{{ $videoId }}?autoplay=1"
+                                        frameborder="0"
+                                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                        allowfullscreen></iframe>
+                            @elseif($videoType === 'vimeo')
+                                <iframe class="w-full aspect-video"
+                                        src="https://player.vimeo.com/video/{{ $videoId }}?autoplay=1"
+                                        frameborder="0"
+                                        allow="autoplay; fullscreen"
+                                        allowfullscreen></iframe>
+                            @else
+                                <div class="text-white p-4 text-center">
+                                    <p>Bu video türü desteklenmiyor</p>
+                                </div>
+                            @endif
+                        </div>
+
+                        <!-- Video Controls/Info -->
+                        <div class="bg-gray-900 text-white p-4">
+                            <h4 class="font-bold text-lg">{{ $lesson->title }}</h4>
+                            <p class="text-gray-300 text-sm mt-1">{{ $lesson->description }}</p>
+                            <div class="mt-3 flex justify-between items-center">
+                                <div class="flex space-x-3">
+                                    <button class="p-2 rounded-full hover:bg-gray-700">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5" />
+                                        </svg>
+                                    </button>
+                                    <button class="p-2 rounded-full hover:bg-gray-700">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+                                        </svg>
+                                    </button>
+                                </div>
+                                <button wire:click="markAsCompleted"
+                                        class="px-3 py-1 bg-indigo-600 hover:bg-indigo-700 rounded text-sm">
+                                    Tamamlandı olarak işaretle
+                                </button>
+                            </div>
+                        </div>
+                    @else
+                        <div class="flex-1 flex items-center justify-center text-gray-500">
+                            <p>Ders seçilmedi</p>
+                        </div>
+                    @endif
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
