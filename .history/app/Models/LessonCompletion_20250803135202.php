@@ -6,8 +6,6 @@ use Illuminate\Database\Eloquent\Model;
 
 class LessonCompletion extends Model
 {
-        protected $fillable = ['user_id', 'lesson_id']; // Bu satırı ekleyin
-
     /**
      * Tamamlamanın ait olduğu öğrenci
      * @return \Illuminate\Database\Eloquent\Relations\BelongsTo

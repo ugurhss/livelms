@@ -234,7 +234,9 @@
 
                                                 <div class="mt-4">
                                                     @if($isEnrolled || $lesson->is_free)
-  @livewire('lesson-player', ['course' => $course, 'lessonId' => $lesson->id], key(['lesson-player', $lesson->id]))                                                        <div class="text-sm text-gray-600 bg-white p-3 rounded-md border border-gray-200">
+                                                        @livewire('lesson-player', ['course' => $course, 'lessonId' => $lesson->id])
+                                                    @else
+                                                        <div class="text-sm text-gray-600 bg-white p-3 rounded-md border border-gray-200">
                                                             Bu dersi görmek için kursa kayıt olmalısınız
                                                         </div>
                                                     @endif

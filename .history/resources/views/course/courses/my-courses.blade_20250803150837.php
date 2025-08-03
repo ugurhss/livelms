@@ -52,13 +52,12 @@
                         @if($course->thumbnail)
                             <img src="{{ $course->thumbnail }}" alt="{{ $course->title }}" class="w-full h-48 object-cover">
                         @else
-                            <div class="w-full h-48 bg-blue-50 flex items-center justify-center">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-20 w-20 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path d="M12 14l9-5-9-5-9 5 9 5z" />
-                                    <path d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z" />
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 14l9-5-9-5-9 5 9 5zm0 0l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14zm-4 6v-7.5l4-2.222" />
-                                </svg>
-                            </div>
+                          <div class="w-full h-48 bg-blue-50 flex items-center justify-center overflow-hidden">
+    <img src="https://media.istockphoto.com/id/1783743772/tr/fotoğraf/female-speaker-giving-a-presentation-during-business-seminar-at-convention-center.jpg?s=612x612&w=0&k=20&c=V3ERCrY3JJGLoPoqZvvSTOeQ-LmdxfRy2tZMO2owcRI="
+         alt="Female Speaker Giving Presentation"
+         class="h-full w-auto object-cover">
+</div>
+
                         @endif
 
                         <!-- Seviye Badge -->

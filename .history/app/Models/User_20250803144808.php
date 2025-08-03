@@ -76,17 +76,15 @@ class User extends Authenticatable
     {
         return $this->hasMany(Course::class);
     }
-
+       public function enrolledCourses()
+    {
+        return $this->belongsToMany(Course::class, 'enrollments')
+                   ->withPivot('progress', 'completed_at')
+                   ->withTimestamps();
+    }
 public function enrollments()
 {
     return $this->hasMany(Enrollment::class);
-}
-public function enrolledCourses()
-{
-    return $this->belongsToMany(Course::class, 'enrollments')
-                ->using(Enrollment::class)
-                ->withPivot('progress', 'enrolled_at')
-                ->withTimestamps();
 }
         public function completedLessons()
     {

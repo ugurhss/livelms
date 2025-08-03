@@ -244,17 +244,6 @@ public function enroll(Request $request, Course $course)
     $courses = $this->courseService->getEnrolledCourses(Auth::id());
     return view('course.courses.my-courses', compact('courses'));
 }
-public function getEnrolledCourses(int $userId)
-{
-    return Course::whereHas('enrollments', function($query) use ($userId) {
-            $query->where('user_id', $userId);
-        })
-        ->with(['enrollments' => function($query) use ($userId) {
-            $query->where('user_id', $userId);
-        }])
-        ->withCount('lessons')
-        ->paginate(10);
-}
 
     public function quiz(int $courseId)
     {
@@ -279,7 +268,7 @@ public function getEnrolledCourses(int $userId)
 
     $lastLesson = $course->lessons()->orderBy('order')->first();
 
-    return view('course.courses.lesson-modal', [
+    return view('courses.learn', [
         'course' => $course,
         'lessons' => $course->lessons()->orderBy('order')->get(),
         'lastLesson' => $lastLesson,

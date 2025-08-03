@@ -4,7 +4,6 @@ use Livewire\Volt\Volt;
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\QuizController;
-use App\Http\Controllers\LessonController;
 use App\Http\Controllers\Api\CourseController;
 use App\Http\Controllers\AdminDashboardController;
 use App\Http\Controllers\StudentDashboardController;
@@ -293,6 +292,3 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
 
     Route::get('/courses/learn/{course}', [CourseController::class, 'learn'])->name('courses.learn');
-Route::post('/lessons/{lesson}/complete', [LessonController::class, 'complete'])
-    ->name('lessons.complete')
-    ->middleware('auth');

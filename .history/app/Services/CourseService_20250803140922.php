@@ -283,22 +283,6 @@ private function generateUniqueLessonSlug(string $title, int $courseId): string
         return $this->courseRepository->getEnrolledCourses($userId);
     }
 
-    // CourseService.php
-public function updateProgress(int $courseId, int $userId)
-{
-    $totalLessons = Lesson::where('course_id', $courseId)->count();
-    $completed = LessonCompletion::where('user_id', $userId)
-                  ->whereHas('lesson', function($q) use ($courseId) {
-                      $q->where('course_id', $courseId);
-                  })->count();
-
-    $progress = $totalLessons > 0 ? round(($completed / $totalLessons) * 100) : 0;
-
-    Enrollment::updateOrCreate(
-        ['user_id' => $userId, 'course_id' => $courseId],
-        ['progress' => $progress]
-    );
-}
    public function enrollUser(int $courseId, int $userId): void
 {
     $course = $this->getCourseById($courseId);

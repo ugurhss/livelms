@@ -60,29 +60,48 @@
         <!-- Sol Taraf (Geniş) -->
         <div class="lg:col-span-2 space-y-6">
             <!-- Kurs İlerleme Durumu -->
-            {{-- <div class="bg-white rounded-lg shadow overflow-hidden">
-                <div class="px-6 py-4 border-b border-gray-200">
-                    <h3 class="text-lg font-medium text-gray-900">Kurs İlerleme Durumu</h3>
-                </div>
-                <div class="p-6">
-                    <div class="space-y-4">
-                        @foreach($courseProgress as $course)
-                        <div>
-                            <div class="flex justify-between mb-1">
-                                <span class="text-sm font-medium text-gray-700">{{ $course['title'] }}</span>
-                                <span class="text-sm font-medium text-gray-700">{{ $course['progress'] }}%</span>
-                            </div>
-                            <div class="w-full bg-gray-200 rounded-full h-2.5">
-                                <div class="bg-blue-600 h-2.5 rounded-full" style="width: {{ $course['progress'] }}%"></div>
-                            </div>
-                            <div class="text-xs text-gray-500 mt-1">
-                                {{ $course['completed_lessons'] }}/{{ $course['total_lessons'] }} ders tamamlandı
+       <div class="bg-white rounded-lg shadow overflow-hidden">
+    <div class="px-6 py-4 border-b border-gray-200">
+        <h3 class="text-lg font-medium text-gray-900">Kurs İlerleme Durumu</h3>
+    </div>
+    <div class="p-6">
+        <div class="space-y-4">
+            @foreach($courseProgress as $course)
+                @php
+                    $enrollment = $course->enrollments->firstWhere('user_id', auth()->id());
+                    $progress = $enrollment->progress ?? 0;
+                @endphp
+                <div>
+                    <div class="flex justify-between mb-1">
+                        <span class="text-sm font-medium text-gray-700">{{ $course->title }}</span>
+                        <span class="text-sm font-medium text-gray-700">{{ $progress }}%</span>
+                    </div>
+                    <div class="w-full bg-gray-200 rounded-full h-2.5">
+                        <div class="bg-blue-600 h-2.5 rounded-full" style="width: {{ $progress }}%"></div>
+                    </div>
+                    <div class="text-xs text-gray-500 mt-1">
+                        {{ $enrollment->completed_lessons ?? 0 }}/{{ $enrollment->total_lessons ?? 0 }} ders tamamlandı
+                    </div>
+
+                    <div class="mb-4 mt-2">
+                        <div class="flex justify-between text-sm mb-1">
+                            <span class="text-gray-600">İlerleme</span>
+                            <span class="font-medium text-blue-600">{{ $progress }}%</span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-2">
+                            <div class="bg-blue-600 h-2 rounded-full"
+                                 style="width: {{ $progress }}%"
+                                 x-data="{ progress: 0 }"
+                                 x-init="setTimeout(() => progress = {{ $progress }}, 100)">
                             </div>
                         </div>
-                        @endforeach
                     </div>
                 </div>
-            </div> --}}
+            @endforeach
+        </div>
+    </div>
+</div>
+
 
             <!-- Aktif Ödevler -->
             <div class="bg-white rounded-lg shadow overflow-hidden">

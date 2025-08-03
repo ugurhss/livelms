@@ -60,7 +60,7 @@
         <!-- Sol Taraf (Geniş) -->
         <div class="lg:col-span-2 space-y-6">
             <!-- Kurs İlerleme Durumu -->
-            {{-- <div class="bg-white rounded-lg shadow overflow-hidden">
+            <div class="bg-white rounded-lg shadow overflow-hidden">
                 <div class="px-6 py-4 border-b border-gray-200">
                     <h3 class="text-lg font-medium text-gray-900">Kurs İlerleme Durumu</h3>
                 </div>
@@ -82,7 +82,7 @@
                         @endforeach
                     </div>
                 </div>
-            </div> --}}
+            </div>
 
             <!-- Aktif Ödevler -->
             <div class="bg-white rounded-lg shadow overflow-hidden">
